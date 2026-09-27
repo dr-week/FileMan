@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#05070d"/>
+      <stop offset="50%" stop-color="#090d16"/>
+      <stop offset="100%" stop-color="#020307"/>
+    </linearGradient>
+
+    <!-- Cyberpunk Amber / Cyan Glow Gradients -->
+    <linearGradient id="dangerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff3b30"/>
+      <stop offset="40%" stop-color="#ff9500"/>
+      <stop offset="100%" stop-color="#ffd60a"/>
+    </linearGradient>
+
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="100%" stop-color="#4facfe"/>
+    </linearGradient>
+
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Subtle Grid Pattern -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1200" height="360" rx="16" fill="url(#bgGrad)"/>
+  <rect width="1200" height="360" rx="16" fill="url(#grid)"/>
+
+  <!-- Border Frame Accent -->
+  <rect x="1" y="1" width="1198" height="358" rx="15" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+  <line x1="80" y1="1" x2="280" y2="1" stroke="url(#dangerGrad)" stroke-width="3" filter="url(#neonGlow)"/>
+  <line x1="920" y1="359" x2="1120" y2="359" stroke="url(#cyanGrad)" stroke-width="3" filter="url(#cyanGlow)"/>
+
+  <!-- Brand Symbol / Emblem (Hexagonal Bio-Digital Shield) -->
+  <g transform="translate(100, 70)">
+    <!-- Outer Aura Hexagon -->
+    <polygon points="110,10 190,56 190,154 110,200 30,154 30,56" 
+             fill="none" stroke="url(#dangerGrad)" stroke-width="2.5" opacity="0.4"/>
+    
+    <!-- Rotating Circuit Rings -->
+    <circle cx="110" cy="105" r="76" fill="none" stroke="rgba(0,242,254,0.2)" stroke-width="1.5" stroke-dasharray="8 6"/>
+    <circle cx="110" cy="105" r="62" fill="none" stroke="rgba(255,149,0,0.3)" stroke-width="1.2" stroke-dasharray="14 10"/>
+
+    <!-- Inner Shield Body -->
+    <polygon points="110,26 174,64 174,146 110,184 46,146 46,64" 
+             fill="url(#shieldGrad)" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+
+    <!-- Danger Labs Triangle Core -->
+    <path d="M 110 52 L 155 136 L 65 136 Z" 
+          fill="none" stroke="url(#dangerGrad)" stroke-width="4.5" stroke-linejoin="round" filter="url(#neonGlow)"/>
+    
+    <!-- Warning Core Glyph -->
+    <line x1="110" y1="78" x2="110" y2="108" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="110" cy="122" r="2.8" fill="#ffffff"/>
+
+    <!-- FileMan Prismatic Data Folders / Prisms -->
+    <path d="M 85 160 L 135 160 L 125 174 L 75 174 Z" fill="url(#cyanGrad)" opacity="0.8"/>
+  </g>
+
+  <!-- Typography / Brand Identity -->
+  <g transform="translate(340, 110)">
+    <!-- Overline Badge -->
+    <g transform="translate(0, 0)">
+      <rect x="0" y="0" width="180" height="24" rx="12" fill="rgba(255,59,48,0.12)" stroke="rgba(255,59,48,0.4)" stroke-width="1"/>
+      <circle cx="14" cy="12" r="4" fill="#ff3b30" filter="url(#neonGlow)"/>
+      <text x="26" y="16.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" 
+            font-size="10.5" font-weight="800" fill="#ff9500" letter-spacing="2">DANGER LABS™</text>
+    </g>
+
+    <g transform="translate(192, 0)">
+      <rect x="0" y="0" width="154" height="24" rx="12" fill="rgba(0,242,254,0.1)" stroke="rgba(0,242,254,0.3)" stroke-width="1"/>
+      <text x="14" y="16.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" 
+            font-size="10.5" font-weight="700" fill="#00f2fe" letter-spacing="1.5">ENTERPRISE CORE</text>
+    </g>
+
+    <!-- Main Title -->
+    <text x="0" y="78" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" 
+          font-size="52" font-weight="900" fill="#ffffff" letter-spacing="-1">
+      LUMEN <tspan fill="url(#dangerGrad)">FILES</tspan>
+    </text>
+
+    <!-- Mission Subline -->
+    <text x="0" y="112" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" 
+          font-size="15.5" font-weight="400" fill="#94a3b8" letter-spacing="0.2">
+      Next-Generation Autonomous Filesystem Companion &amp; High-Velocity Storage Intelligence
+    </text>
+
+    <!-- Spec Badges in SVG -->
+    <g transform="translate(0, 136)">
+      <text x="0" y="12" font-family="'Consolas', 'Courier New', monospace" font-size="11.5" font-weight="600" fill="#64748b">
+        [SYS] <tspan fill="#38bdf8">TAURI-DESKTOP</tspan> • <tspan fill="#4ade80">ANDROID-COMPOSE</tspan> • <tspan fill="#f59e0b">ZERO-ALLOC-HEURISTICS</tspan> • <tspan fill="#a855f7">AIR-GAPPED-SECURITY</tspan>
+      </text>
+    </g>
+  </g>
+</svg>
