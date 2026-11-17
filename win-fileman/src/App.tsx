@@ -1,27 +1,59 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { HeaderBar } from './components/HeaderBar';
-import { FileGrid } from './components/FileGrid';
-import { FileItem } from './components/FileCard';
-import { AppCleaner } from './components/AppCleaner';
-import { DeviceTransferPanel } from './components/DeviceTransferPanel';
+import { ExplorerView } from './features/explorer/ExplorerView';
+import { CleanerView } from './features/cleaner/CleanerView';
+import { SyncView } from './features/sync/SyncView';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'files' | 'cleaner' | 'devices'>('devices');
-  const [currentPath, setCurrentPath] = useState('C:\\Users\\User\\Documents');
+  const [activeTab, setActiveTab] = useState<'files' | 'cleaner' | 'devices'>('files');
+  const [history, setHistory] = useState({ paths: ['C:\\'], index: 0 });
+  const [refreshToken, setRefreshToken] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [wifiConnected, setWifiConnected] = useState(false);
   const [androidDevice, setAndroidDevice] = useState<string | null>(null);
+  const currentPath = history.paths[history.index];
 
-  const mockFiles: FileItem[] = [
-    { name: 'Projects', isDir: true },
-    { name: 'Photos', isDir: true },
-    { name: 'Report_2026.pdf', isDir: false, size: '2.4 MB' },
-    { name: 'System_Backup.zip', isDir: false, size: '450 MB' },
-    { name: 'Design_Spec.png', isDir: false, size: '1.2 MB' },
-  ];
+  const navigateTo = (path: string) => {
+    setActiveTab('files');
+    setHistory(previous => {
+      if (previous.paths[previous.index].toLowerCase() === path.toLowerCase()) return previous;
+      const paths = previous.paths.slice(0, previous.index + 1);
+      paths.push(path);
+      return { paths, index: paths.length - 1 };
+    });
+  };
 
-  const filteredFiles = mockFiles.filter((f) => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const goBack = () => setHistory(previous => ({ ...previous, index: Math.max(0, previous.index - 1) }));
+  const goForward = () => setHistory(previous => ({
+    ...previous,
+    index: Math.min(previous.paths.length - 1, previous.index + 1),
+  }));
+  const goUp = () => {
+    const trimmed = currentPath.replace(/[\\/]+$/, '');
+    const separator = Math.max(trimmed.lastIndexOf('\\'), trimmed.lastIndexOf('/'));
+    navigateTo(separator <= 2 ? `${trimmed.slice(0, 2)}\\` : trimmed.slice(0, separator));
+  };
+
+  useEffect(() => {
+    const handleNavigationKey = (event: KeyboardEvent) => {
+      if (!event.altKey) return;
+      const key = event.key.toLowerCase();
+      if (key === 'arrowleft' && history.index > 0) {
+        event.preventDefault();
+        goBack();
+      } else if (key === 'arrowright' && history.index < history.paths.length - 1) {
+        event.preventDefault();
+        goForward();
+      } else if (key === 'arrowup') {
+        event.preventDefault();
+        goUp();
+      }
+    };
+
+    window.addEventListener('keydown', handleNavigationKey);
+    return () => window.removeEventListener('keydown', handleNavigationKey);
+  }, [currentPath, history.index, history.paths.length]);
 
   const handleConnectAndroid = () => {
     setActiveTab('devices');
@@ -30,8 +62,8 @@ export default function App() {
   };
 
   const getHeaderTitle = () => {
-    if (activeTab === 'cleaner') return 'AppData System Analyzer & Cleaner';
-    if (activeTab === 'devices') return 'Remote Device & Car Infotainment File Sync (REST API)';
+    if (activeTab === 'cleaner') return 'Storage';
+    if (activeTab === 'devices') return 'Transfers';
     return currentPath;
   };
 
@@ -43,7 +75,7 @@ export default function App() {
         wifiConnected={wifiConnected}
         androidDevice={androidDevice}
         onConnectAndroid={handleConnectAndroid}
-        onSelectNav={setCurrentPath}
+        onSelectNav={navigateTo}
         onSelectTab={setActiveTab}
       />
       <div className="main-content">
@@ -52,9 +84,22 @@ export default function App() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
         />
-        {activeTab === 'cleaner' && <AppCleaner />}
-        {activeTab === 'devices' && <DeviceTransferPanel />}
-        {activeTab === 'files' && <FileGrid files={filteredFiles} />}
+        {activeTab === 'cleaner' && <CleanerView />}
+        {activeTab === 'devices' && <SyncView />}
+        {activeTab === 'files' && (
+          <ExplorerView
+            currentPath={currentPath}
+            query={searchQuery}
+            canGoBack={history.index > 0}
+            canGoForward={history.index < history.paths.length - 1}
+            onNavigate={navigateTo}
+            onBack={goBack}
+            onForward={goForward}
+            onUp={goUp}
+            onRefresh={() => setRefreshToken(token => token + 1)}
+            refreshToken={refreshToken}
+          />
+        )}
       </div>
     </div>
   );

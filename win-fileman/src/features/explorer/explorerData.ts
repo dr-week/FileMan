@@ -1,0 +1,52 @@
+import { FileEntry } from '../shared/types';
+
+export const EXPLORER_SAMPLE_FILES: FileEntry[] = [
+  {
+    id: 'projects',
+    name: 'Projects',
+    path: 'C:/Users/User/Documents/Projects',
+    type: 'folder',
+    category: 'document',
+    modifiedAt: '2026-11-12',
+    sizeBytes: 18432000,
+  },
+  {
+    id: 'media',
+    name: 'Media',
+    path: 'C:/Users/User/Videos/Media',
+    type: 'folder',
+    category: 'video',
+    modifiedAt: '2026-11-08',
+    sizeBytes: 42670000,
+  },
+  {
+    id: 'design-spec',
+    name: 'Design_Spec.pdf',
+    path: 'C:/Users/User/Documents/Design_Spec.pdf',
+    type: 'file',
+    extension: 'pdf',
+    category: 'document',
+    sizeBytes: 2457600,
+    modifiedAt: '2026-11-11',
+  },
+  {
+    id: 'backup',
+    name: 'System_Backup.zip',
+    path: 'C:/Users/User/Downloads/System_Backup.zip',
+    type: 'file',
+    extension: 'zip',
+    category: 'archive',
+    sizeBytes: 470000000,
+    modifiedAt: '2026-11-04',
+  },
+  {
+    id: 'image',
+    name: 'Concept_Art.png',
+    path: 'C:/Users/User/Pictures/Concept_Art.png',
+    type: 'file',
+    extension: 'png',
+    category: 'image',
+    sizeBytes: 1572864,
+    modifiedAt: '2026-11-10',
+  },
+];

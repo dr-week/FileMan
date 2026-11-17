@@ -81,7 +81,7 @@ export const DeviceTransferPanel: React.FC = () => {
             className="cleaner-input"
             value={deviceIp}
             onChange={(e) => setDeviceIp(e.target.value)}
-            placeholder="Target IP (e.g. 192.168.1.45)"
+            placeholder="Target IP"
           />
           <input
             type="number"
@@ -91,16 +91,16 @@ export const DeviceTransferPanel: React.FC = () => {
             placeholder="Port"
           />
           <button className="scan-btn" onClick={handleConnect} disabled={loading}>
-            {loading ? <RefreshCw className="spin" size={15} /> : 'Connect API'}
+            {loading ? <RefreshCw className="spin" size={15} /> : 'Connect'}
           </button>
         </div>
 
         <div className="quick-targets">
           <button onClick={() => { setDeviceIp('192.168.1.45'); setDevicePort(8888); }}>
-            <Smartphone size={13} /> Android Phone
+            <Smartphone size={13} /> Android
           </button>
           <button onClick={() => { setDeviceIp('192.168.1.100'); setDevicePort(8888); }}>
-            <Car size={13} /> Car Unit
+            <Car size={13} /> Car
           </button>
         </div>
       </div>
@@ -111,12 +111,12 @@ export const DeviceTransferPanel: React.FC = () => {
             {device.type === 'car' ? <Car size={24} color="#06b6d4" /> : <Smartphone size={24} color="#6366f1" />}
             <div>
               <div className="device-title">{device.name}</div>
-              <div className="device-subtitle">{device.ip}:{device.port} • Status: Online</div>
+              <div className="device-subtitle">{device.ip}:{device.port} • online</div>
             </div>
           </div>
           {device.freeSpaceBytes !== undefined && (
             <div className="storage-summary">
-              Free: {formatBytes(device.freeSpaceBytes)} / {formatBytes(device.totalSpaceBytes || 0)}
+              {formatBytes(device.freeSpaceBytes)} free / {formatBytes(device.totalSpaceBytes || 0)}
             </div>
           )}
         </div>
@@ -139,15 +139,15 @@ export const DeviceTransferPanel: React.FC = () => {
           <button className="icon-action-btn" onClick={handleNavigateUp} title="Parent Directory">
             <ArrowLeft size={16} />
           </button>
-          <span className="current-path-text">{currentPath || 'Root / Storage'}</span>
+          <span className="current-path-text">{currentPath || 'Storage'}</span>
         </div>
         <div className="action-buttons">
           <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={(e) => handleUpload(e, false)} />
           <button className="action-pill-btn" onClick={() => fileInputRef.current?.click()} disabled={!device}>
-            <Upload size={14} /> Send File
+            <Upload size={14} /> Send
           </button>
           <button className="action-pill-btn car" onClick={() => fileInputRef.current?.click()} disabled={!device}>
-            <Car size={14} /> Send Sound Pack
+            <Car size={14} /> Sound
           </button>
           <button className="icon-action-btn" onClick={() => device && loadFiles(device.ip, device.port, currentPath)} title="Refresh">
             <RefreshCw size={15} />

@@ -1,5 +1,13 @@
-import React from 'react';
-import { HardDrive, Folder, Shield, Wifi, Sparkles, Smartphone } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  HardDrive,
+  Wifi,
+  Sparkles,
+  Smartphone,
+  PanelLeftOpen,
+  PanelLeftClose,
+} from 'lucide-react';
+import { ExplorerNavigation } from '../features/explorer/ExplorerNavigation';
 
 interface SidebarProps {
   currentPath: string;
@@ -20,68 +28,89 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectNav,
   onSelectTab,
 }) => {
+  const [isDrawerOpen, setIsDrawerOpen] = useState(true);
+
+  const navItems = [
+    {
+      key: 'devices-sync',
+      label: 'Transfers',
+      badge: 'USB',
+      icon: <Smartphone size={18} color="#06b6d4" />,
+      active: activeTab === 'devices',
+      onClick: () => onSelectTab('devices'),
+    },
+    {
+      key: 'cleaner',
+      label: 'Cleanup',
+      badge: '24G',
+      icon: <Sparkles size={18} color="#f59e0b" />,
+      active: activeTab === 'cleaner',
+      onClick: () => onSelectTab('cleaner'),
+    },
+  ];
+
   return (
-    <div className="sidebar">
+    <aside className={`sidebar ${isDrawerOpen ? 'open' : 'collapsed'}`}>
       <div className="brand-title">
-        <span>LUMEN FILES</span>
-        <span className="brand-badge">WIN</span>
+        {isDrawerOpen && <span className="brand-text">Files</span>}
+        <span className="brand-badge">Desk</span>
+        <button
+          type="button"
+          className="drawer-toggle"
+          onClick={() => setIsDrawerOpen(prev => !prev)}
+          aria-label={isDrawerOpen ? 'Collapse drawer' : 'Expand drawer'}
+        >
+          {isDrawerOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+        </button>
       </div>
 
       <div className="nav-section">
-        <div
-          className={`nav-item ${activeTab === 'files' && currentPath.startsWith('C:') ? 'active' : ''}`}
-          onClick={() => {
-            onSelectTab('files');
-            onSelectNav('C:\\Users\\User\\Documents');
-          }}
-        >
-          <HardDrive size={18} color="#06b6d4" />
-          <span>Local Disk (C:)</span>
-        </div>
+        {isDrawerOpen ? (
+          <ExplorerNavigation
+            currentPath={currentPath}
+            onNavigate={path => {
+              onSelectTab('files');
+              onSelectNav(path);
+            }}
+            onSelectFiles={() => onSelectTab('files')}
+          />
+        ) : (
+          <button
+            type="button"
+            className={`nav-item ${activeTab === 'files' ? 'active' : ''}`}
+            onClick={() => {
+              onSelectTab('files');
+              onSelectNav('C:\\');
+            }}
+            aria-label="Files"
+            title="Files"
+          >
+            <HardDrive size={18} color="#06b6d4" />
+          </button>
+        )}
+        {navItems.map((item) => (
+          <div key={item.key} className="nav-group">
+            <button
+              type="button"
+              className={`nav-item ${item.active ? 'active' : ''}`}
+              onClick={item.onClick}
+            >
+              {item.icon}
+              {isDrawerOpen && (
+                <div className="nav-item-content">
+                  <span className="nav-label">{item.label}</span>
+                  {item.badge ? <span className="cleaner-badge">{item.badge}</span> : null}
+                </div>
+              )}
+            </button>
 
-        <div
-          className={`nav-item ${activeTab === 'files' && currentPath.includes('Documents') ? 'active' : ''}`}
-          onClick={() => {
-            onSelectTab('files');
-            onSelectNav('C:\\Users\\User\\Documents');
-          }}
-        >
-          <Folder size={18} color="#6366f1" />
-          <span>Documents</span>
-        </div>
-
-        <div
-          className={`nav-item ${activeTab === 'devices' ? 'active' : ''}`}
-          onClick={() => onSelectTab('devices')}
-        >
-          <Smartphone size={18} color="#06b6d4" />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-            <span>Car & Android Sync</span>
-            <span className="cleaner-badge" style={{ background: 'rgba(6, 182, 212, 0.2)', color: '#06b6d4' }}>
-              REST API
-            </span>
           </div>
-        </div>
-
-        <div className="nav-item">
-          <Shield size={18} color="#10b981" />
-          <span>Privacy Vault</span>
-        </div>
-
-        <div
-          className={`nav-item ${activeTab === 'cleaner' ? 'active' : ''}`}
-          onClick={() => onSelectTab('cleaner')}
-        >
-          <Sparkles size={18} color="#f59e0b" />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-            <span>App Cleaner</span>
-            <span className="cleaner-badge">24.1 GB</span>
-          </div>
-        </div>
+        ))}
       </div>
 
-      <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--border-glass)' }}>
-        <div
+      <div className="drawer-footer">
+        <button
+          type="button"
           className={`nav-item ${wifiConnected || activeTab === 'devices' ? 'active' : ''}`}
           onClick={() => {
             onSelectTab('devices');
@@ -89,14 +118,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }}
         >
           <Wifi size={18} color={wifiConnected ? '#10b981' : '#94a3b8'} />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.85rem' }}>{wifiConnected ? 'Device Connected' : 'Connect Device / Car'}</span>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-              {androidDevice || 'Tap to open API Transfer'}
-            </span>
-          </div>
-        </div>
+          {isDrawerOpen && (
+            <div className="nav-item-stack">
+              <span className="nav-label">{wifiConnected ? 'Online' : 'Devices'}</span>
+              <span className="mini-status">{androidDevice || 'No device'}</span>
+            </div>
+          )}
+        </button>
       </div>
-    </div>
+    </aside>
   );
 };

@@ -14,14 +14,14 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 }) => {
   return (
     <div className="header-bar">
-      <div style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--accent-cyan)' }}>
+      <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--accent-cyan)', letterSpacing: '0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {currentPath}
       </div>
       <div className="search-box">
         <Search size={16} color="#94a3b8" />
-        <input 
+        <input
           className="search-input"
-          placeholder="Search files..."
+          placeholder="Search files"
           value={searchQuery}
           onChange={e => onSearchChange(e.target.value)}
         />
