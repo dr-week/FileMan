@@ -127,3 +127,99 @@ export function getDemoVolumeSpace(path: string): VolumeSpaceInfo {
   const used = 324 * 1024 ** 3;
   return { root: 'C:\\', totalBytes: total, usedBytes: used, freeBytes: total - used };
 }
+
+export function copyOrMoveDemoItem(sourcePath: string, destFolder: string, isMove: boolean): FileEntry | null {
+  const normSource = normalizePathKey(sourcePath);
+  const normDest = normalizePathKey(destFolder);
+  if (normSource === normDest) return null;
+
+  const sourceTrimmed = sourcePath.replace(/[\\/]+$/, '');
+  const sep = Math.max(sourceTrimmed.lastIndexOf('\\'), sourceTrimmed.lastIndexOf('/'));
+  const sourceParentKey = sep > 0 ? normalizePathKey(sep <= 2 ? `${sourceTrimmed.slice(0, 2)}\\` : sourceTrimmed.slice(0, sep)) : 'c:\\';
+
+  const sourceEntries = DEMO_TREE[sourceParentKey] || [];
+  const itemIndex = sourceEntries.findIndex(e => normalizePathKey(e.path) === normSource);
+  if (itemIndex < 0) return null;
+  const original = sourceEntries[itemIndex];
+
+  const destParentTrimmed = destFolder.replace(/[\\/]+$/, '');
+  const newPath = `${destParentTrimmed}\\${original.name}`;
+  const newEntry: FileEntry = {
+    ...original,
+    id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    path: newPath,
+    modifiedAt: new Date().toISOString().slice(0, 10),
+  };
+
+  if (!DEMO_TREE[normDest]) DEMO_TREE[normDest] = [];
+  const existingIdx = DEMO_TREE[normDest].findIndex(e => e.name.toLowerCase() === original.name.toLowerCase());
+  if (existingIdx >= 0) {
+    DEMO_TREE[normDest][existingIdx] = newEntry;
+  } else {
+    DEMO_TREE[normDest] = [newEntry, ...DEMO_TREE[normDest]];
+  }
+
+  if (original.type === 'folder') {
+    const oldChildren = DEMO_TREE[normSource] || [];
+    DEMO_TREE[normalizePathKey(newPath)] = [...oldChildren];
+    if (isMove) {
+      delete DEMO_TREE[normSource];
+    }
+  }
+
+  if (isMove) {
+    sourceEntries.splice(itemIndex, 1);
+  }
+
+  return newEntry;
+}
+
+export function importDemoFiles(files: Array<{ name: string; size: number }>, destFolder: string): FileEntry[] {
+  const normDest = normalizePathKey(destFolder);
+  if (!DEMO_TREE[normDest]) DEMO_TREE[normDest] = [];
+  const created: FileEntry[] = [];
+  for (const f of files) {
+    const ext = f.name.includes('.') ? f.name.split('.').pop()?.toLowerCase() : undefined;
+    const destParentTrimmed = destFolder.replace(/[\\/]+$/, '');
+    const entry: FileEntry = {
+      id: `imported-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: f.name,
+      path: `${destParentTrimmed}\\${f.name}`,
+      type: 'file',
+      extension: ext,
+      sizeBytes: f.size,
+      modifiedAt: new Date().toISOString().slice(0, 10),
+      category:
+        ext === 'png' || ext === 'jpg' || ext === 'svg'
+          ? 'image'
+          : ext === 'mp4' || ext === 'mkv'
+            ? 'video'
+            : ext === 'mp3' || ext === 'wav'
+              ? 'audio'
+              : ext === 'zip' || ext === '7z'
+                ? 'archive'
+                : ext === 'ts' || ext === 'tsx' || ext === 'json' || ext === 'rs'
+                  ? 'code'
+                  : 'document',
+    };
+    DEMO_TREE[normDest].unshift(entry);
+    created.push(entry);
+  }
+  return created;
+}
+
+export function deleteDemoItem(itemPath: string): boolean {
+  const norm = normalizePathKey(itemPath);
+  const trimmed = itemPath.replace(/[\\/]+$/, '');
+  const sep = Math.max(trimmed.lastIndexOf('\\'), trimmed.lastIndexOf('/'));
+  const parentKey = sep > 0 ? normalizePathKey(sep <= 2 ? `${trimmed.slice(0, 2)}\\` : trimmed.slice(0, sep)) : 'c:\\';
+  const entries = DEMO_TREE[parentKey];
+  if (!entries) return false;
+  const idx = entries.findIndex(e => normalizePathKey(e.path) === norm);
+  if (idx >= 0) {
+    entries.splice(idx, 1);
+    delete DEMO_TREE[norm];
+    return true;
+  }
+  return false;
+}

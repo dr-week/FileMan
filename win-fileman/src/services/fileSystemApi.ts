@@ -2,10 +2,13 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { FileEntry } from '../features/shared/types';
 import { QuarantineActionResult, QuarantineRecord } from './appCleanerTypes';
 import {
+  copyOrMoveDemoItem,
   createDemoFolder,
+  deleteDemoItem,
   getDemoDrives,
   getDemoLibraries,
   getDemoVolumeSpace,
+  importDemoFiles,
   listDemoDirectory,
 } from './webDemoFs';
 
@@ -128,6 +131,41 @@ export async function openInExplorer(path: string): Promise<void> {
 export async function createFolder(parentPath: string, name: string): Promise<string> {
   if (!isDesktopRuntime()) return createDemoFolder(parentPath, name);
   return invoke<string>('create_folder', { parentPath, name });
+}
+
+export async function copyOrMoveItem(sourcePath: string, destFolder: string, isMove: boolean): Promise<boolean> {
+  if (!isDesktopRuntime()) {
+    const res = copyOrMoveDemoItem(sourcePath, destFolder, isMove);
+    return res !== null;
+  }
+  // Desktop runtime command
+  try {
+    await invoke('copy_or_move_item', { sourcePath, destFolder, isMove });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function importLocalFiles(files: File[], destFolder: string): Promise<FileEntry[]> {
+  if (!isDesktopRuntime()) {
+    const payloads = files.map(f => ({ name: f.name, size: f.size, type: f.type }));
+    return importDemoFiles(payloads, destFolder);
+  }
+  // Desktop runtime stub
+  return [];
+}
+
+export async function deleteFileOrFolder(path: string): Promise<boolean> {
+  if (!isDesktopRuntime()) {
+    return deleteDemoItem(path);
+  }
+  try {
+    await invoke('delete_path', { path });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function listQuarantine(): Promise<QuarantineRecord[]> {

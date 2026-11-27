@@ -6,6 +6,7 @@ import { FileSystemLocation, getLibraryLocations, listDirectory, listDrives } fr
 interface ExplorerNavigationProps {
   currentPath: string;
   onNavigate: (path: string) => void;
+  onNavigateNewTab?: (path: string) => void;
   onSelectFiles: () => void;
 }
 
@@ -14,10 +15,18 @@ interface TreeNodeProps {
   path: string;
   currentPath: string;
   onNavigate: (path: string) => void;
+  onNavigateNewTab?: (path: string) => void;
   isRoot?: boolean;
 }
 
-const DirectoryNode: React.FC<TreeNodeProps> = ({ name, path, currentPath, onNavigate, isRoot = false }) => {
+const DirectoryNode: React.FC<TreeNodeProps> = ({
+  name,
+  path,
+  currentPath,
+  onNavigate,
+  onNavigateNewTab,
+  isRoot = false,
+}) => {
   const [expanded, setExpanded] = useState(false);
   const [folders, setFolders] = useState<FileEntry[]>([]);
   const [loadError, setLoadError] = useState(false);
@@ -36,13 +45,28 @@ const DirectoryNode: React.FC<TreeNodeProps> = ({ name, path, currentPath, onNav
     setExpanded(value => !value);
   };
 
+  const handleAux = (e: React.MouseEvent) => {
+    if (e.button === 1) {
+      e.preventDefault();
+      e.stopPropagation();
+      onNavigateNewTab?.(path);
+    }
+  };
+
   return (
     <div className="location-tree-node">
       <div className={`location-tree-row ${currentPath.toLowerCase() === path.toLowerCase() ? 'active' : ''}`}>
         <button type="button" className="tree-expander" onClick={toggle} aria-label={`${expanded ? 'Collapse' : 'Expand'} ${name}`}>
           {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </button>
-        <button type="button" className="tree-location" onClick={() => onNavigate(path)}>
+        <button
+          type="button"
+          className="tree-location"
+          onClick={() => onNavigate(path)}
+          onMouseDown={handleAux}
+          onAuxClick={handleAux}
+          title={`${path} (Middle-click to open in new tab)`}
+        >
           {isRoot ? <HardDrive size={15} /> : <Folder size={15} />}
           <span>{name}</span>
         </button>
@@ -57,6 +81,7 @@ const DirectoryNode: React.FC<TreeNodeProps> = ({ name, path, currentPath, onNav
               path={folder.path}
               currentPath={currentPath}
               onNavigate={onNavigate}
+              onNavigateNewTab={onNavigateNewTab}
             />
           ))}
         </div>
@@ -68,6 +93,7 @@ const DirectoryNode: React.FC<TreeNodeProps> = ({ name, path, currentPath, onNav
 export const ExplorerNavigation: React.FC<ExplorerNavigationProps> = ({
   currentPath,
   onNavigate,
+  onNavigateNewTab,
   onSelectFiles,
 }) => {
   const [drives, setDrives] = useState<FileSystemLocation[]>([]);
@@ -82,6 +108,14 @@ export const ExplorerNavigation: React.FC<ExplorerNavigationProps> = ({
       })
       .catch(error => setLoadError(error instanceof Error ? error.message : 'Locations unavailable.'));
   }, []);
+
+  const handleAux = (e: React.MouseEvent, path: string) => {
+    if (e.button === 1) {
+      e.preventDefault();
+      e.stopPropagation();
+      onNavigateNewTab?.(path);
+    }
+  };
 
   return (
     <nav className="explorer-navigation" aria-label="File locations">
@@ -99,6 +133,7 @@ export const ExplorerNavigation: React.FC<ExplorerNavigationProps> = ({
                 path={drive.path}
                 currentPath={currentPath}
                 onNavigate={onNavigate}
+                onNavigateNewTab={onNavigateNewTab}
                 isRoot
               />
             ))}
@@ -111,7 +146,9 @@ export const ExplorerNavigation: React.FC<ExplorerNavigationProps> = ({
                 type="button"
                 className={`library-location ${currentPath.toLowerCase() === location.path.toLowerCase() ? 'active' : ''}`}
                 onClick={() => onNavigate(location.path)}
-                title={location.path}
+                onMouseDown={e => handleAux(e, location.path)}
+                onAuxClick={e => handleAux(e, location.path)}
+                title={`${location.path} (Middle-click to open in new tab)`}
               >
                 <Folder size={15} />
                 <span>{location.name}</span>

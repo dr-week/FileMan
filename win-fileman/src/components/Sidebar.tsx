@@ -23,6 +23,7 @@ interface SidebarProps {
   androidDevice: string | null;
   onConnectAndroid: () => void;
   onSelectNav: (path: string) => void;
+  onSelectNavNewTab?: (path: string) => void;
   onSelectTab: (tab: WorkspaceViewId) => void;
   onTogglePin: (path: string) => void;
   onOpenAppearance: () => void;
@@ -37,6 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   androidDevice,
   onConnectAndroid,
   onSelectNav,
+  onSelectNavNewTab,
   onSelectTab,
   onTogglePin,
   onOpenAppearance,
@@ -79,7 +81,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {isDrawerOpen ? (
           <>
             {/* Quick Access / Pinned Folders (File Labs SidebarSections pattern) */}
-            <div className="fl-sidebar-section">
+            <div
+              className="fl-sidebar-section"
+              onDragOver={e => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+              }}
+              onDrop={e => {
+                e.preventDefault();
+                try {
+                  const raw = e.dataTransfer.getData('application/x-fileman-entry');
+                  if (raw) {
+                    const item = JSON.parse(raw);
+                    if (item && item.path) onTogglePin(item.path);
+                  }
+                } catch {
+                  // ignore
+                }
+              }}
+            >
               <button
                 type="button"
                 className="fl-sidebar-section-header"
@@ -92,12 +112,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <>
                   {pinnedPaths.length === 0 ? (
                     <span style={{ padding: '4px 10px', fontSize: 11, color: 'var(--fl-text-muted)' }}>
-                      Ctrl+D pins the current folder
+                      Drag folder here or Ctrl+D to pin
                     </span>
                   ) : (
                     pinnedPaths.map(path => {
                       const label = path.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || path;
                       const isActive = activeTab === 'files' && currentPath.toLowerCase() === path.toLowerCase();
+                      const handleAux = (e: React.MouseEvent) => {
+                        if (e.button === 1) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onSelectNavNewTab?.(path);
+                        }
+                      };
                       return (
                         <button
                           key={path}
@@ -107,7 +134,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             onSelectTab('files');
                             onSelectNav(path);
                           }}
-                          title={`${path} (right-click to unpin)`}
+                          onMouseDown={handleAux}
+                          onAuxClick={handleAux}
+                          title={`${path} (Middle-click to open in new tab · right-click to unpin)`}
                           onContextMenu={e => {
                             e.preventDefault();
                             onTogglePin(path);
@@ -129,6 +158,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onNavigate={path => {
                 onSelectTab('files');
                 onSelectNav(path);
+              }}
+              onNavigateNewTab={path => {
+                onSelectTab('files');
+                onSelectNavNewTab?.(path);
               }}
               onSelectFiles={() => onSelectTab('files')}
             />

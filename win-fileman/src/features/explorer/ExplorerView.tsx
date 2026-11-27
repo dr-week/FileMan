@@ -1,62 +1,79 @@
-import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  ArrowDownUp,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
-  File,
-  FileArchive,
-  FileCode2,
-  FileImage,
-  FileMusic,
-  FileText,
-  FileVideo,
+  Columns2,
   Folder,
   HardDrive,
   Info,
-  LayoutGrid,
-  List,
-  Plus,
-  RotateCw,
-  Search,
-  X,
+  Square,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { FileEntry } from '../shared/types';
 import { formatBytes } from '../shared/formatters';
-import { filterFiles, sortFiles } from './explorerUtils';
-import { Breadcrumb } from './Breadcrumb';
+import { FilePane, PaneTab } from './FilePane';
 import { MetadataPanel } from './MetadataPanel';
-import {
-  getVolumeSpace,
-  listDirectory,
-  VolumeSpaceInfo,
-} from '../../services/fileSystemApi';
+import { VolumeSpaceInfo } from '../../services/fileSystemApi';
 import { WorkspaceViewId } from '../../extensions/registry';
 
-export interface PaneTab {
-  id: string;
-  path: string;
+export interface PaneState {
+  tabs: PaneTab[];
+  activeTabId: string;
+  history: Record<string, { paths: string[]; index: number }>;
 }
 
 interface ExplorerViewProps {
-  currentPath: string;
-  tabs: PaneTab[];
-  activeTabId: string;
+  isDualPane: boolean;
+  onToggleDualPane: () => void;
+  onSwapPanes: () => void;
+  activePaneId: 'left' | 'right';
+  onSetActivePane: (pane: 'left' | 'right') => void;
+
+  // Left pane
+  leftPath: string;
+  leftTabs: PaneTab[];
+  leftActiveTabId: string;
+  leftCanGoBack: boolean;
+  leftCanGoForward: boolean;
+  leftBackTarget?: string | null;
+  leftForwardTarget?: string | null;
+  leftUpTarget?: string | null;
+  onLeftNavigate: (path: string) => void;
+  onLeftNavigateNewTab: (path: string) => void;
+  onLeftBack: () => void;
+  onLeftForward: () => void;
+  onLeftUp: () => void;
+  onLeftNewTab: () => void;
+  onLeftSelectTab: (tabId: string) => void;
+  onLeftCloseTab: (tabId: string) => void;
+  onLeftReorderTabs: (fromIdx: number, toIdx: number) => void;
+
+  // Right pane
+  rightPath: string;
+  rightTabs: PaneTab[];
+  rightActiveTabId: string;
+  rightCanGoBack: boolean;
+  rightCanGoForward: boolean;
+  rightBackTarget?: string | null;
+  rightForwardTarget?: string | null;
+  rightUpTarget?: string | null;
+  onRightNavigate: (path: string) => void;
+  onRightNavigateNewTab: (path: string) => void;
+  onRightBack: () => void;
+  onRightForward: () => void;
+  onRightUp: () => void;
+  onRightNewTab: () => void;
+  onRightSelectTab: (tabId: string) => void;
+  onRightCloseTab: (tabId: string) => void;
+  onRightReorderTabs: (fromIdx: number, toIdx: number) => void;
+
+  // Common
   showHidden: boolean;
   showPreview: boolean;
-  canGoBack: boolean;
-  canGoForward: boolean;
   refreshToken: number;
-  onNavigate: (path: string) => void;
-  onBack: () => void;
-  onForward: () => void;
-  onUp: () => void;
   onRefresh: () => void;
-  onNewTab: () => void;
-  onSelectTab: (tabId: string) => void;
-  onCloseTab: (tabId: string) => void;
   onClosePreview: () => void;
   onSelectionChange: (item: FileEntry | null) => void;
+  onDropFiles: (sourcePath: string, targetFolder: string, isMove: boolean) => void;
+  onImportNativeFiles: (files: File[], targetFolder: string) => void;
   onOpenView: (view: WorkspaceViewId) => void;
   onNotify: (message: string) => void;
 }
@@ -79,429 +96,254 @@ function getFolderLabel(path: string): string {
   return parts[parts.length - 1] || cleaned;
 }
 
-function getRecencyColor(modifiedAt?: string): string {
-  if (!modifiedAt) return 'transparent';
-  const parsed = Date.parse(modifiedAt);
-  if (Number.isNaN(parsed)) return 'transparent';
-  const ageDays = (Date.now() - parsed) / (1000 * 60 * 60 * 24);
-  if (ageDays <= 1) return '#34d399';
-  if (ageDays <= 7) return '#38bdf8';
-  if (ageDays <= 30) return '#818cf8';
-  if (ageDays <= 180) return '#64748b';
-  return 'rgba(148, 163, 184, 0.25)';
-}
-
-function renderEntryIcon(entry: FileEntry, size = 15) {
-  if (entry.type === 'folder') return <Folder size={size} color="var(--fl-amber)" />;
-  const color = CAT_COLORS[entry.category ?? 'other'] ?? 'var(--fl-text-secondary)';
-  switch (entry.category) {
-    case 'image':
-      return <FileImage size={size} color={color} />;
-    case 'video':
-      return <FileVideo size={size} color={color} />;
-    case 'audio':
-      return <FileMusic size={size} color={color} />;
-    case 'archive':
-      return <FileArchive size={size} color={color} />;
-    case 'code':
-      return <FileCode2 size={size} color={color} />;
-    case 'document':
-      return <FileText size={size} color={color} />;
-    default:
-      return <File size={size} color={color} />;
-  }
-}
-
 export const ExplorerView: React.FC<ExplorerViewProps> = ({
-  currentPath,
-  tabs,
-  activeTabId,
+  isDualPane,
+  onToggleDualPane,
+  onSwapPanes,
+  activePaneId,
+  onSetActivePane,
+
+  leftPath,
+  leftTabs,
+  leftActiveTabId,
+  leftCanGoBack,
+  leftCanGoForward,
+  leftBackTarget,
+  leftForwardTarget,
+  leftUpTarget,
+  onLeftNavigate,
+  onLeftNavigateNewTab,
+  onLeftBack,
+  onLeftForward,
+  onLeftUp,
+  onLeftNewTab,
+  onLeftSelectTab,
+  onLeftCloseTab,
+  onLeftReorderTabs,
+
+  rightPath,
+  rightTabs,
+  rightActiveTabId,
+  rightCanGoBack,
+  rightCanGoForward,
+  rightBackTarget,
+  rightForwardTarget,
+  rightUpTarget,
+  onRightNavigate,
+  onRightNavigateNewTab,
+  onRightBack,
+  onRightForward,
+  onRightUp,
+  onRightNewTab,
+  onRightSelectTab,
+  onRightCloseTab,
+  onRightReorderTabs,
+
   showHidden,
   showPreview,
-  canGoBack,
-  canGoForward,
   refreshToken,
-  onNavigate,
-  onBack,
-  onForward,
-  onUp,
   onRefresh,
-  onNewTab,
-  onSelectTab,
-  onCloseTab,
   onClosePreview,
   onSelectionChange,
+  onDropFiles,
+  onImportNativeFiles,
   onOpenView,
   onNotify,
 }) => {
-  const [files, setFiles] = useState<FileEntry[]>([]);
-  const [skippedCount, setSkippedCount] = useState(0);
-  const [volumeInfo, setVolumeInfo] = useState<VolumeSpaceInfo | null>(null);
-  const [addressValue, setAddressValue] = useState(currentPath);
-  const [isEditingPath, setIsEditingPath] = useState(false);
-  const [filterQuery, setFilterQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [sortMode, setSortMode] = useState<'name' | 'size' | 'modifiedAt'>('name');
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [splitRatio, setSplitRatio] = useState(0.5);
+  const [isDraggingSplitter, setIsDraggingSplitter] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const pathInputRef = useRef<HTMLInputElement>(null);
-  const filterInputRef = useRef<HTMLInputElement>(null);
+  // Active pane stats & selection
+  const [activeStats, setActiveStats] = useState<{
+    totalBytes: number;
+    folderCount: number;
+    catTotals: Map<string, number>;
+    volumeInfo: VolumeSpaceInfo | null;
+  }>({
+    totalBytes: 0,
+    folderCount: 0,
+    catTotals: new Map(),
+    volumeInfo: null,
+  });
+  const [selectedItem, setSelectedItem] = useState<FileEntry | null>(null);
 
+  const activeCurrentPath = activePaneId === 'left' ? leftPath : rightPath;
+
+  // Splitter drag handling between the 2 panes
   useEffect(() => {
-    let active = true;
-    setAddressValue(currentPath);
-    setIsEditingPath(false);
-    setIsLoading(true);
-    setLoadError(null);
-
-    listDirectory(currentPath)
-      .then(result => {
-        if (!active) return;
-        const entries = result.entries.map(entry => ({
-          ...entry,
-          modifiedAt:
-            entry.modifiedAt && /^\d+$/.test(entry.modifiedAt)
-              ? new Date(Number(entry.modifiedAt) * 1000).toISOString().slice(0, 10)
-              : entry.modifiedAt,
-        }));
-        setFiles(entries);
-        setSkippedCount(result.skippedCount);
-        setSelectedId(entries[0]?.id ?? null);
-      })
-      .catch(error => {
-        if (!active) return;
-        setFiles([]);
-        setSkippedCount(0);
-        setSelectedId(null);
-        setLoadError(error instanceof Error ? error.message : 'Unable to open this location.');
-      })
-      .finally(() => {
-        if (active) setIsLoading(false);
-      });
-
-    getVolumeSpace(currentPath)
-      .then(info => {
-        if (active) setVolumeInfo(info);
-      })
-      .catch(() => {
-        if (active) setVolumeInfo(null);
-      });
-
+    if (!isDraggingSplitter) return;
+    const onMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const relativeX = e.clientX - rect.left;
+      const ratio = Math.max(0.2, Math.min(0.8, relativeX / rect.width));
+      setSplitRatio(ratio);
+    };
+    const onMouseUp = () => {
+      setIsDraggingSplitter(false);
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
     return () => {
-      active = false;
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
     };
-  }, [currentPath, refreshToken]);
+  }, [isDraggingSplitter]);
 
-  // Pane-level keyboard shortcuts (Ctrl+L edit path, Ctrl+F focus filter)
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'l') {
-        event.preventDefault();
-        setIsEditingPath(true);
-        setTimeout(() => pathInputRef.current?.select(), 0);
-      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
-        event.preventDefault();
-        filterInputRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
-
-  const visibleFiles = useMemo(() => {
-    const hiddenFiltered = showHidden ? files : files.filter(entry => !entry.isHidden);
-    return sortFiles(filterFiles(hiddenFiltered, filterQuery), sortMode);
-  }, [files, showHidden, filterQuery, sortMode]);
-
-  const selectedItem = useMemo(
-    () => visibleFiles.find(item => item.id === selectedId) ?? visibleFiles[0] ?? null,
-    [visibleFiles, selectedId],
-  );
-
-  useEffect(() => {
-    onSelectionChange(selectedItem);
-  }, [selectedItem, onSelectionChange]);
-
-  const { totalBytes, folderCount, catTotals } = useMemo(() => {
-    let bytes = 0;
-    let folders = 0;
-    const cats = new Map<string, number>();
-    for (const entry of visibleFiles) {
-      if (entry.type === 'folder') {
-        folders += 1;
-        continue;
-      }
-      const size = entry.sizeBytes ?? 0;
-      bytes += size;
-      const cat = entry.category ?? 'other';
-      cats.set(cat, (cats.get(cat) ?? 0) + size);
-    }
-    return { totalBytes: bytes, folderCount: folders, catTotals: cats };
-  }, [visibleFiles]);
-
-  const usedPercent = useMemo(() => {
-    if (!volumeInfo || volumeInfo.totalBytes <= 0) return 0;
-    return Math.min(100, Math.round((volumeInfo.usedBytes / volumeInfo.totalBytes) * 100));
-  }, [volumeInfo]);
-
-  const handleAddressSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    if (addressValue.trim()) {
-      onNavigate(addressValue.trim());
-    }
-    setIsEditingPath(false);
-  };
-
-  const cycleSort = () => {
-    setSortMode(prev => (prev === 'name' ? 'size' : prev === 'size' ? 'modifiedAt' : 'name'));
-  };
+  const usedPercent = activeStats.volumeInfo && activeStats.volumeInfo.totalBytes > 0
+    ? Math.min(100, Math.round((activeStats.volumeInfo.usedBytes / activeStats.volumeInfo.totalBytes) * 100))
+    : 0;
 
   return (
     <>
-      {/* Main Pane + Optional Right Preview Area */}
-      <div className="fl-workspace-body">
-        <section className="fl-pane-card active-pane" aria-label="Active file pane">
-          {/* Browser-style Tab Strip */}
-          <div className="fl-tab-strip" role="tablist">
-            {tabs.map(tab => {
-              const isActive = tab.id === activeTabId;
-              return (
-                <div
-                  key={tab.id}
-                  role="tab"
-                  aria-selected={isActive}
-                  className={`fl-tab ${isActive ? 'active' : ''}`}
-                  onClick={() => onSelectTab(tab.id)}
-                  title={tab.path}
-                >
-                  <Folder size={13} color={isActive ? 'var(--fl-accent)' : 'var(--fl-text-muted)'} />
-                  <span className="fl-tab-label">{getFolderLabel(tab.path)}</span>
-                  {tabs.length > 1 && (
-                    <button
-                      type="button"
-                      className="fl-tab-close"
-                      aria-label={`Close ${getFolderLabel(tab.path)} tab`}
-                      onClick={e => {
-                        e.stopPropagation();
-                        onCloseTab(tab.id);
-                      }}
-                    >
-                      <X size={11} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+      {/* Panes workspace with quick dual-pane tools */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', minHeight: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--fl-text-muted)' }}>
+          <span style={{ fontWeight: 600, color: 'var(--fl-accent)' }}>
+            {activePaneId === 'left' ? 'Left Pane Active' : 'Right Pane Active'}
+          </span>
+          <span>·</span>
+          <span>Press <kbd style={{ padding: '1px 4px', borderRadius: 3, background: 'var(--fl-card-bg)', border: '1px solid var(--fl-border-subtle)' }}>Tab</kbd> to switch</span>
+          <span>·</span>
+          <span>Middle-click opens in new tab</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {isDualPane && (
             <button
               type="button"
               className="fl-icon-btn"
-              onClick={onNewTab}
-              title="New tab (Ctrl+T)"
-              aria-label="New tab"
-              style={{ marginBottom: 2 }}
+              onClick={onSwapPanes}
+              title="Swap Left and Right panes (Ctrl+U)"
             >
-              <Plus size={13} />
+              <ArrowLeftRight size={13} />
+              <span>Swap (Ctrl+U)</span>
             </button>
-          </div>
+          )}
+          <button
+            type="button"
+            className={`fl-icon-btn ${isDualPane ? 'active' : ''}`}
+            onClick={onToggleDualPane}
+            title={isDualPane ? 'Switch to single pane (Ctrl+P)' : 'Switch to dual pane (Ctrl+P)'}
+          >
+            {isDualPane ? <Columns2 size={13} /> : <Square size={13} />}
+            <span>{isDualPane ? 'Dual Pane' : 'Single Pane'}</span>
+          </button>
+        </div>
+      </div>
 
-          {/* Integrated Navigation, Breadcrumb/Path Input & Per-Pane Filter */}
-          <div className="fl-path-bar">
-            <button type="button" className="fl-icon-btn" onClick={onBack} disabled={!canGoBack} title="Back (Alt+Left)" aria-label="Back">
-              <ArrowLeft size={14} />
-            </button>
-            <button type="button" className="fl-icon-btn" onClick={onForward} disabled={!canGoForward} title="Forward (Alt+Right)" aria-label="Forward">
-              <ArrowRight size={14} />
-            </button>
-            <button type="button" className="fl-icon-btn" onClick={onUp} disabled={currentPath.length <= 3} title="Up (Alt+Up)" aria-label="Up">
-              <ArrowUp size={14} />
-            </button>
-            <button type="button" className="fl-icon-btn" onClick={onRefresh} title="Refresh (F5)" aria-label="Refresh">
-              <RotateCw size={13} />
-            </button>
-
-            <div
-              className={`fl-crumb-box ${isEditingPath ? 'editing' : ''}`}
-              onClick={() => {
-                if (!isEditingPath) {
-                  setIsEditingPath(true);
-                  setTimeout(() => pathInputRef.current?.select(), 0);
+      {/* Main Panes Container + Optional Right Preview */}
+      <div className="fl-workspace-body">
+        <div ref={containerRef} className="fl-pane-grid">
+          {/* Left Pane (Always present) */}
+          <div
+            className="fl-pane-col"
+            style={{ flex: isDualPane ? `${splitRatio}` : '1 1 100%', minWidth: 240 }}
+          >
+            <FilePane
+              paneId="left"
+              paneTitle="Left"
+              isActive={activePaneId === 'left'}
+              currentPath={leftPath}
+              tabs={leftTabs}
+              activeTabId={leftActiveTabId}
+              showHidden={showHidden}
+              canGoBack={leftCanGoBack}
+              canGoForward={leftCanGoForward}
+              backTarget={leftBackTarget}
+              forwardTarget={leftForwardTarget}
+              upTarget={leftUpTarget}
+              refreshToken={refreshToken}
+              onFocus={() => onSetActivePane('left')}
+              onNavigate={onLeftNavigate}
+              onNavigateNewTab={onLeftNavigateNewTab}
+              onBack={onLeftBack}
+              onForward={onLeftForward}
+              onUp={onLeftUp}
+              onRefresh={onRefresh}
+              onNewTab={onLeftNewTab}
+              onSelectTab={onLeftSelectTab}
+              onCloseTab={onLeftCloseTab}
+              onReorderTabs={onLeftReorderTabs}
+              onSelectionChange={item => {
+                if (activePaneId === 'left') {
+                  setSelectedItem(item);
+                  onSelectionChange(item);
                 }
               }}
-              title="Click or press Ctrl+L to edit path"
+              onDropFiles={onDropFiles}
+              onImportNativeFiles={onImportNativeFiles}
+              onNotify={onNotify}
+              onStatsCalculated={stats => {
+                if (activePaneId === 'left') setActiveStats(stats);
+              }}
+            />
+          </div>
+
+          {/* Draggable Resizable Splitter between the 2 panes */}
+          {isDualPane && (
+            <div
+              className={`fl-pane-splitter ${isDraggingSplitter ? 'dragging' : ''}`}
+              title="Drag to resize panes · double-click to reset 50/50"
+              onMouseDown={() => setIsDraggingSplitter(true)}
+              onDoubleClick={() => setSplitRatio(0.5)}
+            />
+          )}
+
+          {/* Right Pane (When Dual-Pane is enabled) */}
+          {isDualPane && (
+            <div
+              className="fl-pane-col"
+              style={{ flex: `${1 - splitRatio}`, minWidth: 240 }}
             >
-              {isEditingPath ? (
-                <form onSubmit={handleAddressSubmit} style={{ width: '100%' }}>
-                  <input
-                    ref={pathInputRef}
-                    className="fl-path-input"
-                    aria-label="Folder path"
-                    value={addressValue}
-                    onChange={e => setAddressValue(e.target.value)}
-                    onBlur={() => setIsEditingPath(false)}
-                    onKeyDown={e => {
-                      if (e.key === 'Escape') {
-                        setAddressValue(currentPath);
-                        setIsEditingPath(false);
-                      }
-                    }}
-                  />
-                </form>
-              ) : (
-                <div onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', minWidth: 0, overflow: 'hidden' }}>
-                  <Breadcrumb path={currentPath} onNavigate={onNavigate} />
-                </div>
-              )}
-            </div>
-
-            <div className="fl-filter-box">
-              <Search size={12} color="var(--fl-text-muted)" />
-              <input
-                ref={filterInputRef}
-                className="fl-filter-input"
-                placeholder="Filter folder (Ctrl+F)"
-                value={filterQuery}
-                onChange={e => setFilterQuery(e.target.value)}
-              />
-              {filterQuery && (
-                <button
-                  type="button"
-                  className="fl-tab-close"
-                  onClick={() => setFilterQuery('')}
-                  aria-label="Clear filter"
-                >
-                  <X size={11} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Drive Usage Strip */}
-          <div className="fl-folder-strip">
-            <div className="fl-drive-track" title={volumeInfo ? `${usedPercent}% used` : 'Volume usage'}>
-              <div
-                className={`fl-drive-fill ${usedPercent >= 90 ? 'critical' : ''}`}
-                style={{ width: `${volumeInfo ? usedPercent : 0}%` }}
+              <FilePane
+                paneId="right"
+                paneTitle="Right"
+                isActive={activePaneId === 'right'}
+                currentPath={rightPath}
+                tabs={rightTabs}
+                activeTabId={rightActiveTabId}
+                showHidden={showHidden}
+                canGoBack={rightCanGoBack}
+                canGoForward={rightCanGoForward}
+                backTarget={rightBackTarget}
+                forwardTarget={rightForwardTarget}
+                upTarget={rightUpTarget}
+                refreshToken={refreshToken}
+                onFocus={() => onSetActivePane('right')}
+                onNavigate={onRightNavigate}
+                onNavigateNewTab={onRightNavigateNewTab}
+                onBack={onRightBack}
+                onForward={onRightForward}
+                onUp={onRightUp}
+                onRefresh={onRefresh}
+                onNewTab={onRightNewTab}
+                onSelectTab={onRightSelectTab}
+                onCloseTab={onRightCloseTab}
+                onReorderTabs={onRightReorderTabs}
+                onSelectionChange={item => {
+                  if (activePaneId === 'right') {
+                    setSelectedItem(item);
+                    onSelectionChange(item);
+                  }
+                }}
+                onDropFiles={onDropFiles}
+                onImportNativeFiles={onImportNativeFiles}
+                onNotify={onNotify}
+                onStatsCalculated={stats => {
+                  if (activePaneId === 'right') setActiveStats(stats);
+                }}
               />
             </div>
-            <span className="fl-drive-label">
-              {volumeInfo
-                ? `${formatBytes(volumeInfo.freeBytes)} free of ${formatBytes(volumeInfo.totalBytes)}`
-                : currentPath}
-            </span>
-          </div>
+          )}
+        </div>
 
-          {/* File List / Tiles Viewport */}
-          <div className="fl-list-viewport">
-            {viewMode === 'list' ? (
-              <>
-                <div className="fl-details-header">
-                  <button type="button" className="fl-col-btn" onClick={() => setSortMode('name')}>
-                    Name {sortMode === 'name' ? '▾' : ''}
-                  </button>
-                  <span>Type</span>
-                  <button type="button" className="fl-col-btn" onClick={() => setSortMode('size')}>
-                    Size {sortMode === 'size' ? '▾' : ''}
-                  </button>
-                  <button type="button" className="fl-col-btn" onClick={() => setSortMode('modifiedAt')}>
-                    Modified {sortMode === 'modifiedAt' ? '▾' : ''}
-                  </button>
-                </div>
-
-                {visibleFiles.map(file => (
-                  <button
-                    key={file.id}
-                    type="button"
-                    className={`fl-details-row ${selectedId === file.id ? 'selected' : ''} ${file.isHidden ? 'dimmed' : ''}`}
-                    onClick={() => setSelectedId(file.id)}
-                    onDoubleClick={() => {
-                      if (file.type === 'folder') onNavigate(file.path);
-                    }}
-                  >
-                    <span className="fl-name-cell">
-                      <span
-                        className="fl-age-bar"
-                        style={{ background: getRecencyColor(file.modifiedAt) }}
-                        aria-hidden="true"
-                      />
-                      {renderEntryIcon(file, 15)}
-                      <span className="fl-name-text">{file.name}</span>
-                    </span>
-                    <span className="fl-meta-cell">{file.type === 'folder' ? 'Folder' : file.extension || file.category || 'File'}</span>
-                    <span className="fl-meta-cell">{file.sizeBytes ? formatBytes(file.sizeBytes) : '—'}</span>
-                    <span className="fl-meta-cell">{file.modifiedAt ?? '—'}</span>
-                  </button>
-                ))}
-              </>
-            ) : (
-              <div className="fl-tiles-grid">
-                {visibleFiles.map(file => (
-                  <button
-                    key={file.id}
-                    type="button"
-                    className={`fl-tile ${selectedId === file.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedId(file.id)}
-                    onDoubleClick={() => {
-                      if (file.type === 'folder') onNavigate(file.path);
-                    }}
-                  >
-                    {renderEntryIcon(file, 34)}
-                    <span className="fl-tile-age" style={{ background: getRecencyColor(file.modifiedAt) }} />
-                    <span className="fl-tile-name">{file.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {!isLoading && loadError && <div className="explorer-empty-state">{loadError}</div>}
-            {!isLoading && !loadError && visibleFiles.length === 0 && (
-              <div className="explorer-empty-state">
-                {filterQuery ? `No items matching "${filterQuery}".` : 'This folder is empty.'}
-              </div>
-            )}
-            {isLoading && <div className="explorer-empty-state">Loading folder contents...</div>}
-            {!isLoading && skippedCount > 0 && (
-              <div className="explorer-empty-state">{skippedCount} items skipped due to permissions.</div>
-            )}
-          </div>
-
-          {/* Pane Footer (Sort & View Controls) */}
-          <div className="fl-pane-footer">
-            <span>
-              {visibleFiles.length} items ({folderCount} folders) · {formatBytes(totalBytes)}
-            </span>
-            <div className="fl-pane-footer-actions">
-              <button type="button" className="fl-icon-btn" onClick={cycleSort} title="Cycle sort column">
-                <ArrowDownUp size={12} />
-                <span>{sortMode === 'modifiedAt' ? 'Modified' : sortMode === 'size' ? 'Size' : 'Name'}</span>
-              </button>
-              <button
-                type="button"
-                className={`fl-icon-btn ${viewMode === 'list' ? 'active' : ''}`}
-                onClick={() => setViewMode('list')}
-                title="Details view"
-              >
-                <List size={12} />
-                <span>Details</span>
-              </button>
-              <button
-                type="button"
-                className={`fl-icon-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                onClick={() => setViewMode('grid')}
-                title="Tiles view"
-              >
-                <LayoutGrid size={12} />
-                <span>Tiles</span>
-              </button>
-            </div>
-          </div>
-        </section>
-
+        {/* Collapsible Preview/Inspector Pane on the right */}
         {showPreview && (
           <MetadataPanel
             item={selectedItem}
-            currentPath={currentPath}
+            currentPath={activeCurrentPath}
             onClose={onClosePreview}
             onOpenView={onOpenView}
             onNotify={onNotify}
@@ -509,22 +351,22 @@ export const ExplorerView: React.FC<ExplorerViewProps> = ({
         )}
       </div>
 
-      {/* File Labs 3-Card Summary Row underneath panes */}
+      {/* File Labs 3-Card Summary Row for Active Pane */}
       <div className="fl-stats-row">
         <div className="fl-stat-card">
           <HardDrive size={18} className="fl-stat-icon" />
           <div className="fl-stat-content">
             <div className="fl-stat-top">
-              <strong>{volumeInfo?.root ?? getFolderLabel(currentPath)}</strong>
-              <span>{volumeInfo ? `${usedPercent}% used` : 'Local'}</span>
+              <strong>{activeStats.volumeInfo?.root ?? getFolderLabel(activeCurrentPath)}</strong>
+              <span>{activeStats.volumeInfo ? `${usedPercent}% used` : 'Local'}</span>
             </div>
             <div className="fl-stat-value">
-              {volumeInfo ? `${formatBytes(volumeInfo.freeBytes)} free` : 'Desktop Ready'}
+              {activeStats.volumeInfo ? `${formatBytes(activeStats.volumeInfo.freeBytes)} free` : 'Ready'}
             </div>
             <div className="fl-drive-track" style={{ marginTop: 4, height: 4 }}>
               <div
                 className={`fl-drive-fill ${usedPercent >= 90 ? 'critical' : ''}`}
-                style={{ width: `${volumeInfo ? usedPercent : 0}%` }}
+                style={{ width: `${activeStats.volumeInfo ? usedPercent : 0}%` }}
               />
             </div>
           </div>
@@ -534,18 +376,18 @@ export const ExplorerView: React.FC<ExplorerViewProps> = ({
           <Folder size={18} className="fl-stat-icon" color="var(--fl-accent)" />
           <div className="fl-stat-content">
             <div className="fl-stat-top">
-              <span>This folder</span>
-              <span>{folderCount} folders</span>
+              <span>{activePaneId === 'left' ? 'Left folder' : 'Right folder'}</span>
+              <span>{activeStats.folderCount} folders</span>
             </div>
-            <div className="fl-stat-value">{formatBytes(totalBytes)}</div>
+            <div className="fl-stat-value">{formatBytes(activeStats.totalBytes)}</div>
             <div className="fl-kind-bar" aria-label="Folder file category breakdown">
-              {totalBytes > 0 &&
-                Array.from(catTotals.entries()).map(([cat, bytes]) => (
+              {activeStats.totalBytes > 0 &&
+                Array.from(activeStats.catTotals.entries()).map(([cat, bytes]) => (
                   <div
                     key={cat}
                     title={`${cat}: ${formatBytes(bytes)}`}
                     style={{
-                      width: `${(bytes / totalBytes) * 100}%`,
+                      width: `${(bytes / activeStats.totalBytes) * 100}%`,
                       background: CAT_COLORS[cat] ?? '#94a3b8',
                     }}
                   />
