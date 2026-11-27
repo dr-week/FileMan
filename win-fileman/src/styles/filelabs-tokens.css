@@ -1,0 +1,980 @@
+/* ==========================================================================
+   File Labs Design System & Theme Adapter Layer
+   Bridges File Labs' layout geometry, typography, spacing, and visual hierarchy
+   onto Lumen Files' dynamic CSS custom properties so every theme works cleanly.
+   ========================================================================== */
+
+:root {
+  --fl-bg-canvas: oklch(13% 0.03 245);
+  --fl-bg-overlay: radial-gradient(circle at top left, rgba(99, 102, 241, 0.16), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(6, 182, 212, 0.12), transparent 28%);
+  --fl-sidebar-bg: rgba(12, 18, 32, 0.78);
+  --fl-pane-bg: rgba(17, 24, 39, 0.72);
+  --fl-popup-bg: rgba(15, 23, 42, 0.94);
+  --fl-tab-strip-bg: rgba(2, 6, 23, 0.44);
+  --fl-input-bg: rgba(15, 23, 42, 0.72);
+  --fl-card-bg: rgba(15, 23, 42, 0.62);
+  --fl-row-hover: rgba(148, 163, 184, 0.1);
+  --fl-row-alt: rgba(148, 163, 184, 0.045);
+  --fl-border-subtle: rgba(148, 163, 184, 0.16);
+  --fl-border-strong: rgba(148, 163, 184, 0.28);
+  --fl-text-primary: oklch(97% 0.02 250);
+  --fl-text-secondary: oklch(76% 0.02 250);
+  --fl-text-muted: oklch(66% 0.02 250);
+  --fl-accent: #38bdf8;
+  --fl-accent-secondary: #818cf8;
+  --fl-accent-select: rgba(56, 189, 248, 0.2);
+  --fl-accent-select-text: #f8fafc;
+  --fl-accent-soft: rgba(56, 189, 248, 0.14);
+  --fl-accent-edge: rgba(56, 189, 248, 0.55);
+  --fl-emerald: #34d399;
+  --fl-amber: #fbbf24;
+  --fl-danger: #f87171;
+  --fl-radius-scale: 1;
+  --fl-radius-sm: 4px;
+  --fl-radius-md: 6px;
+  --fl-radius-lg: 10px;
+  --fl-font-ui: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --fl-blur: 16px;
+  --fl-shadow: 0 16px 40px rgba(2, 6, 23, 0.45);
+  --fl-row-height: 34px;
+  --fl-row-pad-y: 7px;
+  --fl-font-size: 12.5px;
+}
+
+body {
+  background-color: var(--fl-bg-canvas);
+  background-image: var(--fl-bg-overlay);
+  color: var(--fl-text-primary);
+  font-family: var(--fl-font-ui);
+  font-size: var(--fl-font-size);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* File Labs Window Skeleton */
+.fl-app-shell {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: transparent;
+}
+
+/* Sidebar */
+.fl-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--fl-sidebar-bg);
+  backdrop-filter: blur(var(--fl-blur)) saturate(1.15);
+  -webkit-backdrop-filter: blur(var(--fl-blur)) saturate(1.15);
+  border-right: 1px solid var(--fl-border-subtle);
+  flex-shrink: 0;
+  transition: width 0.16s ease;
+}
+
+.fl-sidebar.collapsed {
+  width: 60px !important;
+}
+
+.fl-sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px 10px 14px;
+  min-height: 44px;
+}
+
+.fl-brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--fl-radius-md);
+  background: linear-gradient(135deg, var(--fl-accent), var(--fl-accent-secondary));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.fl-brand-name {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--fl-text-primary);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.fl-brand-version {
+  font-size: 10.5px;
+  color: var(--fl-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fl-sidebar-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fl-sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fl-sidebar-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--fl-text-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: var(--fl-radius-sm);
+}
+
+.fl-sidebar-section-header:hover {
+  color: var(--fl-text-primary);
+  background: var(--fl-row-hover);
+}
+
+.fl-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 6px 9px;
+  border-radius: var(--fl-radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--fl-text-secondary);
+  font-size: 12.5px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.fl-sidebar-item:hover {
+  background: var(--fl-row-hover);
+  color: var(--fl-text-primary);
+}
+
+.fl-sidebar-item.active {
+  background: var(--fl-accent-soft);
+  border-color: var(--fl-accent-edge);
+  color: var(--fl-text-primary);
+  font-weight: 600;
+}
+
+.fl-sidebar-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--fl-row-hover);
+  color: var(--fl-text-secondary);
+  border: 1px solid var(--fl-border-subtle);
+}
+
+.fl-sidebar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 8px;
+  border-top: 1px solid var(--fl-border-subtle);
+}
+
+.fl-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 30px;
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: var(--fl-radius-md);
+  background: transparent;
+  color: var(--fl-text-secondary);
+  font-size: 11.5px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.fl-icon-btn:hover:not(:disabled) {
+  background: var(--fl-row-hover);
+  color: var(--fl-text-primary);
+}
+
+.fl-icon-btn.active {
+  background: var(--fl-accent-soft);
+  border-color: var(--fl-accent-edge);
+  color: var(--fl-text-primary);
+}
+
+.fl-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Resizable Splitter (File Labs GridSplitter equivalent) */
+.fl-splitter {
+  width: 5px;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.fl-splitter::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 1px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.fl-splitter:hover::after,
+.fl-splitter.dragging::after {
+  background: var(--fl-accent);
+  width: 2px;
+  left: 1.5px;
+}
+
+/* Main Workspace Column */
+.fl-workspace {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px 6px 8px;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.fl-workspace-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 8px;
+  overflow: hidden;
+}
+
+/* Pane Card (File Labs PaneView.xaml Card + Glow) */
+.fl-pane-card {
+  flex: 1;
+  min-width: 260px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--fl-pane-bg);
+  backdrop-filter: blur(var(--fl-blur));
+  -webkit-backdrop-filter: blur(var(--fl-blur));
+  border: 1px solid var(--fl-border-subtle);
+  border-radius: var(--fl-radius-lg);
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fl-pane-card.active-pane {
+  border-color: var(--fl-accent-edge);
+  box-shadow: 0 0 0 1px var(--fl-accent-soft), var(--fl-shadow);
+}
+
+/* Browser-style Tab Strip */
+.fl-tab-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 5px 6px 0;
+  background: var(--fl-tab-strip-bg);
+  border-bottom: 1px solid var(--fl-border-subtle);
+  min-height: 34px;
+}
+
+.fl-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 210px;
+  min-width: 92px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--fl-radius-md) var(--fl-radius-md) 0 0;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: transparent;
+  color: var(--fl-text-muted);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.fl-tab:hover {
+  background: var(--fl-row-hover);
+  color: var(--fl-text-primary);
+}
+
+.fl-tab.active {
+  background: var(--fl-pane-bg);
+  color: var(--fl-text-primary);
+  font-weight: 600;
+  border-color: var(--fl-border-subtle);
+  margin-bottom: -1px;
+  padding-bottom: 1px;
+}
+
+.fl-tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  text-align: left;
+}
+
+.fl-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--fl-radius-sm);
+  border: 0;
+  background: transparent;
+  color: var(--fl-text-muted);
+  cursor: pointer;
+}
+
+.fl-tab-close:hover {
+  background: var(--fl-row-hover);
+  color: var(--fl-text-primary);
+}
+
+/* Path & Filter Bar (PaneView.xaml PathBar) */
+.fl-path-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 4px;
+}
+
+.fl-crumb-box {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 6px;
+  border-radius: var(--fl-radius-md);
+  border: 1px solid transparent;
+  cursor: text;
+  overflow: hidden;
+}
+
+.fl-crumb-box:hover {
+  background: var(--fl-row-hover);
+}
+
+.fl-crumb-box.editing {
+  background: var(--fl-input-bg);
+  border-color: var(--fl-accent-edge);
+  padding: 0;
+}
+
+.fl-path-input {
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--fl-text-primary);
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.fl-filter-box {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 210px;
+  height: 28px;
+  padding: 0 7px;
+  border-radius: var(--fl-radius-md);
+  background: var(--fl-input-bg);
+  border: 1px solid var(--fl-border-subtle);
+}
+
+.fl-filter-box:focus-within {
+  border-color: var(--fl-accent-edge);
+}
+
+.fl-filter-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--fl-text-primary);
+  font-size: 11.5px;
+  font-family: inherit;
+}
+
+.fl-filter-input::placeholder {
+  color: var(--fl-text-muted);
+}
+
+/* Drive Usage Strip (PaneView.xaml FolderStrip) */
+.fl-folder-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 12px 5px;
+}
+
+.fl-drive-track {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--fl-border-subtle);
+  overflow: hidden;
+}
+
+.fl-drive-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--fl-accent);
+  transition: width 0.25s ease;
+}
+
+.fl-drive-fill.critical {
+  background: var(--fl-danger);
+}
+
+.fl-drive-label {
+  font-size: 11px;
+  color: var(--fl-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* File List (Details & Grid) */
+.fl-list-viewport {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 4px;
+}
+
+.fl-details-header {
+  display: grid;
+  grid-template-columns: minmax(180px, 2.4fr) 88px 92px 132px;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--fl-border-subtle);
+  color: var(--fl-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  background: var(--fl-pane-bg);
+  backdrop-filter: blur(var(--fl-blur));
+  z-index: 2;
+}
+
+.fl-col-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.fl-col-btn:hover {
+  color: var(--fl-text-primary);
+}
+
+.fl-details-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 2.4fr) 88px 92px 132px;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: var(--fl-row-height);
+  padding: var(--fl-row-pad-y) 12px var(--fl-row-pad-y) 8px;
+  border: 1px solid transparent;
+  border-radius: var(--fl-radius-sm);
+  background: transparent;
+  color: var(--fl-text-primary);
+  font-size: var(--fl-font-size);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.08s ease;
+}
+
+.fl-details-row:nth-child(even) {
+  background: var(--fl-row-alt);
+}
+
+.fl-details-row:hover {
+  background: var(--fl-row-hover);
+}
+
+.fl-details-row.selected {
+  background: var(--fl-accent-select);
+  color: var(--fl-accent-select-text);
+}
+
+.fl-details-row.dimmed {
+  opacity: 0.55;
+}
+
+.fl-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fl-age-bar {
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.fl-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.fl-meta-cell {
+  color: var(--fl-text-secondary);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fl-details-row.selected .fl-meta-cell {
+  color: var(--fl-accent-select-text);
+  opacity: 0.88;
+}
+
+/* Grid / Tiles View */
+.fl-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  gap: 8px;
+  padding: 10px 8px;
+}
+
+.fl-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px 10px;
+  border-radius: var(--fl-radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--fl-text-primary);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.fl-tile:hover {
+  background: var(--fl-row-hover);
+}
+
+.fl-tile.selected {
+  background: var(--fl-accent-select);
+  border-color: var(--fl-accent-edge);
+  color: var(--fl-accent-select-text);
+}
+
+.fl-tile-age {
+  width: 30px;
+  height: 3px;
+  border-radius: 999px;
+}
+
+.fl-tile-name {
+  font-size: 11.5px;
+  text-align: center;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Pane Footer (PaneView.xaml lines 215-230) */
+.fl-pane-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 10px;
+  border-top: 1px solid var(--fl-border-subtle);
+  font-size: 11px;
+  color: var(--fl-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fl-pane-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Preview / Inspector Panel (MainWindow.xaml PreviewPane) */
+.fl-preview-pane {
+  width: 280px;
+  min-width: 230px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  background: var(--fl-pane-bg);
+  backdrop-filter: blur(var(--fl-blur));
+  border: 1px solid var(--fl-border-subtle);
+  border-radius: var(--fl-radius-lg);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.fl-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 6px 12px;
+  border-bottom: 1px solid var(--fl-border-subtle);
+  font-size: 11.5px;
+  color: var(--fl-text-muted);
+}
+
+.fl-preview-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fl-integration-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--fl-border-subtle);
+}
+
+.fl-integration-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--fl-radius-md);
+  border: 1px solid var(--fl-border-subtle);
+  background: var(--fl-card-bg);
+  color: var(--fl-text-primary);
+  font-size: 11.5px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.fl-integration-btn:hover {
+  border-color: var(--fl-accent-edge);
+  background: var(--fl-accent-soft);
+}
+
+/* 3-Card Summary Row (MainWindow.xaml StatsRow) */
+.fl-stats-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.fl-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 13px;
+  background: var(--fl-card-bg);
+  border: 1px solid var(--fl-border-subtle);
+  border-radius: var(--fl-radius-lg);
+  min-width: 0;
+}
+
+.fl-stat-icon {
+  color: var(--fl-text-muted);
+  flex-shrink: 0;
+}
+
+.fl-stat-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fl-stat-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--fl-text-muted);
+}
+
+.fl-stat-value {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--fl-text-primary);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fl-stat-sub {
+  font-size: 11px;
+  color: var(--fl-text-muted);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fl-kind-bar {
+  display: flex;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--fl-border-subtle);
+  margin-top: 4px;
+}
+
+/* Bottom Command Bar (MainWindow.xaml Grid.Row="3") */
+.fl-command-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 2px 0;
+  flex-shrink: 0;
+}
+
+.fl-command-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.fl-cmd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: var(--fl-radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--fl-text-primary);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.fl-cmd-btn:hover:not(:disabled) {
+  background: var(--fl-row-hover);
+}
+
+.fl-cmd-btn.active {
+  background: var(--fl-accent-soft);
+  border-color: var(--fl-accent-edge);
+}
+
+.fl-cmd-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.fl-cmd-key {
+  color: var(--fl-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fl-status-text {
+  font-size: 11px;
+  color: var(--fl-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 340px;
+}
+
+/* Theme & Appearance Modal */
+.fl-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.fl-modal {
+  width: min(560px, 92vw);
+  background: var(--fl-popup-bg);
+  border: 1px solid var(--fl-border-strong);
+  border-radius: var(--fl-radius-lg);
+  box-shadow: var(--fl-shadow);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--fl-text-primary);
+}
+
+.fl-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  gap: 10px;
+}
+
+.fl-theme-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: var(--fl-radius-md);
+  border: 1px solid var(--fl-border-subtle);
+  background: var(--fl-card-bg);
+  color: var(--fl-text-primary);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.fl-theme-card:hover {
+  border-color: var(--fl-border-strong);
+}
+
+.fl-theme-card.active {
+  border-color: var(--fl-accent);
+  box-shadow: 0 0 0 1px var(--fl-accent);
+}
+
+.fl-theme-swatch {
+  height: 28px;
+  border-radius: var(--fl-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 4px;
+  gap: 4px;
+}
+
+.fl-swatch-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.fl-segmented {
+  display: inline-flex;
+  border: 1px solid var(--fl-border-subtle);
+  border-radius: var(--fl-radius-md);
+  overflow: hidden;
+  background: var(--fl-input-bg);
+}
+
+.fl-segmented button {
+  padding: 5px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--fl-text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.fl-segmented button.active {
+  background: var(--fl-accent-select);
+  color: var(--fl-accent-select-text);
+  font-weight: 600;
+}
+
+/* Scrollbar polish matching File Labs App.xaml */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--fl-border-strong);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fl-text-muted);
+}
+
+/* Adapt embedded add-on views (CleanerView, SyncView) cleanly inside the new shell */
+.fl-addon-viewport {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--fl-pane-bg);
+  border: 1px solid var(--fl-border-subtle);
+  border-radius: var(--fl-radius-lg);
+}

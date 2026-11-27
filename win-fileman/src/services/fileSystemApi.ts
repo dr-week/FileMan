@@ -1,6 +1,13 @@
 import { invoke } from '@tauri-apps/api/tauri';
 import { FileEntry } from '../features/shared/types';
 import { QuarantineActionResult, QuarantineRecord } from './appCleanerTypes';
+import {
+  createDemoFolder,
+  getDemoDrives,
+  getDemoLibraries,
+  getDemoVolumeSpace,
+  listDemoDirectory,
+} from './webDemoFs';
 
 export interface FileSystemLocation {
   name: string;
@@ -79,22 +86,22 @@ function ensureDesktopRuntime() {
 }
 
 export async function listDrives(): Promise<FileSystemLocation[]> {
-  ensureDesktopRuntime();
+  if (!isDesktopRuntime()) return getDemoDrives();
   return invoke<FileSystemLocation[]>('list_drives');
 }
 
 export async function getLibraryLocations(): Promise<FileSystemLocation[]> {
-  ensureDesktopRuntime();
+  if (!isDesktopRuntime()) return getDemoLibraries();
   return invoke<FileSystemLocation[]>('get_library_locations');
 }
 
 export async function listDirectory(path: string): Promise<DirectoryListing> {
-  ensureDesktopRuntime();
+  if (!isDesktopRuntime()) return listDemoDirectory(path);
   return invoke<DirectoryListing>('list_directory', { path });
 }
 
 export async function getCleanerScanRoots(): Promise<CleanerScanRoot[]> {
-  ensureDesktopRuntime();
+  if (!isDesktopRuntime()) return getDemoDrives();
   return invoke<CleanerScanRoot[]>('get_cleaner_scan_roots');
 }
 
@@ -109,7 +116,7 @@ export async function scanAppDataCandidates(): Promise<AppDataScanReport> {
 }
 
 export async function getVolumeSpace(path: string): Promise<VolumeSpaceInfo> {
-  ensureDesktopRuntime();
+  if (!isDesktopRuntime()) return getDemoVolumeSpace(path);
   return invoke<VolumeSpaceInfo>('get_volume_space', { path });
 }
 
@@ -119,7 +126,7 @@ export async function openInExplorer(path: string): Promise<void> {
 }
 
 export async function createFolder(parentPath: string, name: string): Promise<string> {
-  ensureDesktopRuntime();
+  if (!isDesktopRuntime()) return createDemoFolder(parentPath, name);
   return invoke<string>('create_folder', { parentPath, name });
 }
 
